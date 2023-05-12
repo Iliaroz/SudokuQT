@@ -10,17 +10,22 @@ import numpy as np
 import logging
 ## GUI
 from PyQt6 import QtGui, QtWidgets, QtCore, uic
+from PyQt6.QtCore import pyqtSlot
 ## model, detection, video
 import cv2 as cv
 
 from enum import Enum, IntEnum
 
+## Other parts
+from SudokuRecognition import SudokuRecognition
+
 
 class VideoMode(Enum):
-    FullRecognition = 1
-    TextRecognition = 2
+    SudokuSolution = 1
+    DigitRecognition = 2
     TableDetection = 3
     ImageFiltered = 4
+    OriginalImage = 5
     def __eq__(self, other):    return self.value ==  other.value
     def __ne__(self, other):    return self.value !=  other.value
 
@@ -35,20 +40,18 @@ class VideoMode(Enum):
 class Signals(QtCore.QObject):
     """ Signals (Qt signals) used in whole application
     """
-    signal_game_started = QtCore.pyqtSignal()
-    signal_game_stopped = QtCore.pyqtSignal()
-    signal_game_status = QtCore.pyqtSignal(str)
-    signal_game_p1_status = QtCore.pyqtSignal(str)
-    signal_game_p2_status = QtCore.pyqtSignal(str)
-    signal_game_board = QtCore.pyqtSignal(np.ndarray) ## Approved board
+
+    signal_detected_sudoku_board = QtCore.pyqtSignal(tuple) ## recognized board and solved board
     
-    signal_change_pixmap = QtCore.pyqtSignal(np.ndarray)
-    signal_detection_matrix = QtCore.pyqtSignal(np.ndarray)
-    signal_video_change_port = QtCore.pyqtSignal(int)
+    signal_change_original_pixmap = QtCore.pyqtSignal(tuple)   ## tuple:(bool: flag, np.ndarray)
+    signal_change_processed_pixmap = QtCore.pyqtSignal(tuple)  ## tuple:(bool: flag, np.ndarray)
     signal_video_change_mode = QtCore.pyqtSignal(VideoMode)
+
+    signal_open_image_file = QtCore.pyqtSignal(str)
+    signal_recognition_process = QtCore.pyqtSignal(tuple)   ## status of recognition process
+    signal_recognition_completed = QtCore.pyqtSignal(bool)  ## 
     
-    signal_app_start_game = QtCore.pyqtSignal(tuple)
-    signal_app_stop_game = QtCore.pyqtSignal()
+
     
     def __init__(self):
         super().__init__()
@@ -107,9 +110,112 @@ class DeltaQueue(object):
         res = np.asarray(E).all()
         return res
             
+################################################################
 
 
-    
+class QActingPushButton(QtWidgets.QPushButton):
+    """QPushButtons don't interact with their QActions. This class triggers
+    every `QAction` in `self.actions()` when the `clicked` signal is emitted.
+    https://stackoverflow.com/a/16703358
+    """
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.clicked.connect(self.trigger_actions)
+
+    @QtCore.pyqtSlot()
+    def trigger_actions(self) -> None:
+        for act in self.actions():
+            act.trigger()
+
+
+###########################################################
+###########################################################
+### Recognition thread classs and worker
+###########################################################
+###########################################################
+# QTTread that run always and recive events from gui
+
+
+
+
+class WorkerRecognition(QtCore.QObject):
+
+    def __init__(self, parent=None):
+
+        super().__init__()
+        self.signals = AppSignals
+        self.imageFileName = None
+        self.SudokuRecognition = None
+        ## App signals connection
+        self.signals.signal_video_change_mode.connect(self.slot_change_video_mode)
+        self.signals.signal_open_image_file.connect(self.slot_load_image)
+
+    @pyqtSlot()
+    def start(self):
+        print("Worker start")
+        # self.SudokuRecognition = SudokuRecognition()
+        pass
+
+    @QtCore.pyqtSlot(str)
+    def slot_load_image(self, imageFileName):
+        if self.SudokuRecognition is None:
+            print("Creating SudokuRecognition class instance")
+            self.SudokuRecognition = SudokuRecognition()
+        self.imageFileName = imageFileName
+        self.SudokuRecognition.setNewImage(self.imageFileName)
+        # try:
+        res = self.SudokuRecognition.MakeImageRecognition(callback = self.callback_process)
+        if res:
+            self.signals.signal_detected_sudoku_board.emit( (
+                    self.SudokuRecognition.BoardRecognition,
+                    self.SudokuRecognition.BoardSolution) )
+        self.signals.signal_recognition_completed.emit(True)
+        # except:
+            # self.signals.signal_recognition_completed.emit(False)
+            # logger.error("Cannot recognize image")
+
+    def callback_process(self):
+        with self.SudokuRecognition as sr:
+            status = tuple(
+                sr.f_image_loaded,          ## image loaded
+                sr.f_image_preprocessed,    ## image preprocessed
+                sr.f_image_extracted,       ## table extracted
+                sr.f_image_recognized,      ## table digits recognized
+                sr.f_image_solved          ## sudoku solved
+                )
+        self.signals.signal_recognition_process.emit(status)
+        pass
+
+    @QtCore.pyqtSlot(VideoMode)
+    def slot_change_video_mode(self, mode):
+        """Slot, catch signal from Gui to change video mode: what frame will be passed to GUI
+        """
+        logger.info("Changing video mode: mode=" + str(mode))
+        self.mode = mode
+        if self.SudokuRecognition is None:
+            return
+        image_show = None
+        if (self.mode == VideoMode.OriginalImage):
+            image_show =    self.SudokuRecognition.Image_original
+        elif (self.mode == VideoMode.SudokuSolution):
+            image_show =    self.SudokuRecognition.Image_solved
+        elif (self.mode == VideoMode.DigitRecognition):
+            image_show =    self.SudokuRecognition.Image_recognized
+        elif (self.mode == VideoMode.TableDetection):
+            image_show =    self.SudokuRecognition.Image_extracted
+        elif (self.mode == VideoMode.ImageFiltered):
+            image_show =    self.SudokuRecognition.Image_preprocessed
+        
+        if image_show is None:
+            logger.info("No image to show")
+            self.signals.signal_change_processed_pixmap.emit((False, image_show))
+            return
+        self.signals.signal_change_processed_pixmap.emit((True, image_show))
+        pass    
+
+
+
+        
 
 ###########################################################
 ###########################################################
@@ -141,21 +247,57 @@ class AppSudoku(QtWidgets.QMainWindow):
         self.imageLabelProcessed.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.imageLabelProcessed.customContextMenuRequested.connect(self.video_on_context_menu)
 
-        ## Log editors for read only
-        self.logApp.setReadOnly(True)
-
-        ## Openbutton
+        ## OpenImage action
         icon = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DialogOpenButton)
         self.actionOpenImage.setIcon(icon)
+        self.actionOpenImage.triggered.connect(self.act_open_image_clicked)
+        self.actionStopRecognition.triggered.connect(self.act_stop_recognition)
+        self.actionStopRecognition.setEnabled(False)
+        # self.actionOpenImage.setEnabled(False)
+        self.cbxSolved.setChecked(True)
+
+        ## OpenImage button
+        self.btnLoadImage = QActingPushButton(self.centralwidget)
+        self.btnLoadImage.setObjectName(u"btnLoadImage")
+        self.btnLoadImage.setMaximumSize(QtCore.QSize(150, 16777215))
+        self.layoutButtons.addWidget(self.btnLoadImage, 0, 0, 1, 1)
+        self.btnLoadImage.setText(QtCore.QCoreApplication.translate("MainWindow", u"Open image..", None))
+        self.btnLoadImage.addAction(self.actionOpenImage)
+
+        ## Solve button
+        self.btnSolveSudoku = QActingPushButton(self.centralwidget)
+        self.btnSolveSudoku.setObjectName(u"btnSolveSudoku")
+        self.btnSolveSudoku.setMaximumSize(QtCore.QSize(150, 16777215))
+        self.layoutButtons.addWidget(self.btnSolveSudoku, 1, 0, 1, 1)
+        self.btnSolveSudoku.setText(QtCore.QCoreApplication.translate("MainWindow", u"Solve!", None))
+        self.btnSolveSudoku.setEnabled(False)
 
         self.makeGameArea()
         self.signals = AppSignals
 
         ## connect its signal to the update_image slot
-        self.signals.signal_change_pixmap.connect(self.update_original_image)
-        self.signals.signal_detection_matrix.connect(self.update_game_buttons_detection)
+        self.signals.signal_change_original_pixmap.connect(self.update_original_image)
+        self.signals.signal_change_processed_pixmap.connect(self.update_processed_image)
+        self.signals.signal_detected_sudoku_board.connect(self.update_game_buttons_detection)
+        self.signals.signal_recognition_process.connect(self.update_checkboxes_recognition)
 
-        self.signals.signal_change_pixmap.emit(self.OriginalImage)
+        self.signals.signal_change_original_pixmap.emit((True, self.OriginalImage))
+
+        ##############################################
+        ### Recognizer thread and worker handling and starting
+        # 1 - create Worker and Thread inside the Form
+        self.worker_recognition = WorkerRecognition()  # no parent!
+        self.threadRecognition = QtCore.QThread()  # no parent!
+        # 2 - Connect Worker`s Signals to Form method slots to post data.
+        # 3 - Move the Worker object to the Thread object
+        self.worker_recognition.moveToThread(self.threadRecognition)
+        # 4 - Connect Worker Signals to the Thread slots
+        # 5 - Connect Thread started signal to Worker operational slot method
+        self.threadRecognition.started.connect(self.worker_recognition.start)
+        # * - Thread finished signal will close the app if you want!
+        self.threadRecognition.finished.connect(app.exit)
+        # 6 - Start the thread
+        self.threadRecognition.start()
         
 
     def generateImage(self, text):
@@ -195,7 +337,7 @@ class AppSudoku(QtWidgets.QMainWindow):
             self,
             "Open File",
             "",
-            "All Files (*);; JPG files (*.jpg, *.jpeg);; PNG Files (*.png)",
+            "JPG files (*.jpg; *.jpeg);; PNG Files (*.png);; All Files (*)",
         )
         logger.debug(f"OpenImage: result {openFileResult}.")
         fname = openFileResult[0]
@@ -205,13 +347,15 @@ class AppSudoku(QtWidgets.QMainWindow):
 
     def act_stop_recognition(self):
         logger.info("StopRecognition button clicked.")
-        self.signals.signal_game_stopped.emit()
+        # self.signals.signal_game_stopped.emit()
 
     def LoadImageFromFile(self, fname):
-        img = cv.imread(fname, cv.IMREAD_GRAYSCALE)
+        img = cv.imread(fname, cv.IMREAD_COLOR)
         if img is not None:
             self.OriginalImage = img
-            self.signals.signal_change_pixmap.emit(self.OriginalImage)
+            self.signals.signal_change_original_pixmap.emit((True, self.OriginalImage))
+            self.signals.signal_change_processed_pixmap.emit((None, None))
+            self.signals.signal_open_image_file.emit(fname)
         pass
 
 
@@ -219,18 +363,69 @@ class AppSudoku(QtWidgets.QMainWindow):
     def btn_game_pressed(self):
         btn = self.sender()
         logger.info("GameButton pressed." + 'r=' + str(btn.row) + 'c=' + str(btn.col))
-#        self.setGameButtonIcon(btn, "red")
+        print("")
         pass
 
-        
+    @QtCore.pyqtSlot()
+    def slot_show_image_loaded(self):
+        """request to show image loaded
+        """
+        print("slot_show_image_loaded")
+        self.signals.signal_video_change_mode.emit(VideoMode.OriginalImage)
+        pass
 
-    def setGameButtonIcon(self, btn, icon):
+    @QtCore.pyqtSlot()
+    def slot_show_image_processed(self):
+        """request to show image processed: filtered into BW
         """
-        set button icon and enlarge it to full size
+        print("slot_show_image_processed")
+        self.signals.signal_video_change_mode.emit(VideoMode.ImageFiltered)
+        pass
+
+    @QtCore.pyqtSlot()
+    def slot_show_image_transformed(self):
+        """request to show image with selected sudoku and transformed to square
         """
-        #ico = QtGui.QIcon(self.icons[icon])
-        #btn.setIcon(ico)
-        #btn.setIconSize(btn.size())
+        print("slot_show_image_transformed")
+        self.signals.signal_video_change_mode.emit(VideoMode.TableDetection)
+        pass
+    @QtCore.pyqtSlot()
+    def slot_show_image_recognized(self):
+        """request to show image with recognized sudoku digits
+        """
+        print("slot_show_image_recognized")
+        self.signals.signal_video_change_mode.emit(VideoMode.DigitRecognition)
+        pass
+        
+    @QtCore.pyqtSlot()
+    def slot_show_image_solved(self):
+        """request to show image with solved sudoku digits and solution
+        """
+        print("slot_show_image_solved")
+        self.signals.signal_video_change_mode.emit(VideoMode.SudokuSolution)
+        pass
+        
+    @QtCore.pyqtSlot(tuple)
+    def update_checkboxes_recognition(self, status):
+        """update checkboxes with recognition status
+        """
+        print("update_checkboxes_recognition")
+        checkboxes = [self.cbxLoaded,
+                      self.cbxPreprocessed,
+                      self.cbxTransformed,
+                      self.cbxRecognized,
+                      self.cbxSolved]
+        modes = [VideoMode.OriginalImage,
+                 VideoMode.ImageFiltered,
+                 VideoMode.TableDetection,
+                 VideoMode.DigitRecognition,
+                 VideoMode.SudokuSolution]
+        for wd, st, md in zip(checkboxes, status, modes):
+            # wd.setChecked(st)
+            wd.setCheckState(st)
+            if st:
+                mode = md
+        self.signals.signal_video_change_mode(mode)
         pass
 
 
@@ -248,7 +443,7 @@ class AppSudoku(QtWidgets.QMainWindow):
             for r in range(self.GameSize):
                 btn = QtWidgets.QPushButton("")
                 btn.setFixedSize(40,40)
-                self.setGameButtonIcon(btn, "empty")
+                btn.setText("")
                 btn.clicked.connect(self.btn_game_pressed)
                 btn.row = r
                 btn.col = c
@@ -281,43 +476,58 @@ class AppSudoku(QtWidgets.QMainWindow):
         if action != None:
             if hasattr(action, 'modeToSwitch'):
                 self.signals.signal_video_change_mode.emit(action.modeToSwitch)
-            if hasattr(action, 'newVideoPort'):
-                self.signals.signal_video_change_port.emit(action.newVideoPort)
-                
 
-    @QtCore.pyqtSlot(np.ndarray)
-    def update_game_buttons_detection(self, GB):
-        """Updates the images of game buttons, placing detected cups"""
-        ## TODO: BoardState
-        color_map = {-1 : "red", 0 : "empty", 1 : "blue" }
+
+    @QtCore.pyqtSlot(tuple)
+    def update_game_buttons_detection(self, boards):
+        """Updates the values of game buttons"""
+        GBrec, GBsolved = boards
+        if GBrec is None:
+            GBrec = np.zeros((self.GameSize, self.GameSize))
+        if GBsolved is None:
+            GBsolved = GBrec
+        color_map = {True : "(255,0,0)",  None : None,   False : "(0,255,0)" }
         for i in reversed(range(self.gameLayout.count())): 
             btn = self.gameLayout.itemAt(i).widget()
-            self.setGameButtonIcon(btn, color_map[ int(GB[btn.row, btn.col]) ])
-
-    @QtCore.pyqtSlot(np.ndarray)
-    def update_game_buttons_board(self, GB):
-        """Updates the color of game buttons according to current approved game Board"""
-        ## TODO: BoardState
-        color_map = {-1 : "(255,128,128,128)", 0 : None, 1 : "(128,128,255,128)" }
-        for i in reversed(range(self.gameLayout.count())): 
-            btn = self.gameLayout.itemAt(i).widget()
-            color = color_map[ int(GB[btn.row, btn.col]) ]
+            useSolv = (int(GBrec[btn.row, btn.col]) == 10)
+            color = color_map[ useSolv ]
+            ## table selection
+            if useSolv:
+                num = int(GBsolved[btn.row, btn.col])
+            else:
+                num = int(GBrec[btn.row, btn.col])
+            ## show number 1...9
+            if 0<num<10:
+                text = str(num)
+            else:
+                text = ""
             if color != None:
-                style = "background-color:rgba" + color + ";"
+                style = "color:rgb" + color + ";" + "font-size:24px;"
             else:
                 style = ""
             btn.setStyleSheet(style)
+            btn.setText(text)
 
 
-    @QtCore.pyqtSlot(np.ndarray)
-    def update_original_image(self, cv_img):
+
+
+    @QtCore.pyqtSlot(tuple)
+    def update_original_image(self, values):
         """Updates the image_label with a new opencv image"""
+        if values[0] is None or values[0] == False:
+            cv_img = self.generateImage("no image")
+        else:
+            cv_img = values[1]
         qt_img = self.convert_cv_qt(cv_img)
         self.imageLabelOriginal.setPixmap(qt_img)
 
-    @QtCore.pyqtSlot(np.ndarray)
-    def update_processed_image(self, cv_img):
-        """Updates the image_label2 with a new opencv image"""
+    @QtCore.pyqtSlot(tuple)
+    def update_processed_image(self, values):
+        """Updates the imageLabelProcessed with a new opencv image"""
+        if values[0] is None or values[0] == False:
+            cv_img = self.generateImage("no image")
+        else:
+            cv_img = values[1]
         qt_img = self.convert_cv_qt(cv_img)
         self.imageLabelProcessed.setPixmap(qt_img)
 
@@ -336,20 +546,7 @@ class AppSudoku(QtWidgets.QMainWindow):
         self.btnGameControl.setText("Start game")
         pass
 
-    @QtCore.pyqtSlot(str)
-    def update_game_status(self, stat):
-        self.lblGameStatus.setText(stat)
-        pass
 
-    @QtCore.pyqtSlot(str)
-    def update_game_p1_status(self, stat):
-        self.lblPlayer1Status.setText(stat)
-        pass
-
-    @QtCore.pyqtSlot(str)
-    def update_game_p2_status(self, stat):
-        self.lblPlayer2Status.setText(stat)
-        pass
 
 
     def convert_cv_qt(self, cv_img):
@@ -358,8 +555,8 @@ class AppSudoku(QtWidgets.QMainWindow):
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
         convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
-        p = convert_to_Qt_format.scaled(self.display_width, self.display_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-        qtpix = QtGui.QPixmap.fromImage(p)
+        scaled_Qt_image = convert_to_Qt_format.scaled(self.display_width, self.display_height, QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        qtpix = QtGui.QPixmap.fromImage(scaled_Qt_image)
         return qtpix
 
     
@@ -377,6 +574,7 @@ if __name__=="__main__":
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
+    os.makedirs('./debug', exist_ok=True)
 
     logging.basicConfig(filename='./App-running.log', filemode='w', 
                     encoding='utf-8', level=logging.ERROR)

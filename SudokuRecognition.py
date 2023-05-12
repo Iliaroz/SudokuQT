@@ -7,7 +7,8 @@ import cv2 as cv
 import keras
 
 from PIL import Image, ImageDraw, ImageFont
-
+import logging
+logger = logging.getLogger("AppSudoku")
 
 class ImageContours():
     def __init__(self, image) -> None:
@@ -255,28 +256,36 @@ class ImageContours():
 
 
 class SudokuRecognition():
-    # OCRpipeline = keras_ocr.pipeline.Pipeline()
-    PREDICT_MODEL = keras.models.load_model('model_font_28x28x1'+'.h5')
-    # PREDICT_MODEL = keras.models.load_model('model_mnist'+'.h5')
-    PREDICT_CLASSES = list("0123456789_")
-    def __init__(self, fname, size=9):
-        self.filename = fname
+    def __init__(self, filename=None, size=9):
+        self.PREDICT_MODEL = keras.models.load_model('./' + 'model_font_28x28x1'+'.h5')
+        # self.PREDICT_MODEL = keras.models.load_model('./' + 'model_mnist'+'.h5')
         self.Size = size
+        self.__init()
+        if filename is not None:
+            self.setNewImage(filename)
+
+    def __init(self):
         self.Image_original = None      ## Original:    color
         self.Image_preprocessed = None  ## Preprocessed: color
-        self.Image_extracted = None     ##
-        self.Image_recognized = None
+        self.Image_extracted = None     ## transformed sudoku table
+        self.Image_recognized = None    ## recognized sudoku table
         self.Image_solved = None        ## Solved and rotated back as original image
 
-        self.f_image_loaded = False
-        self.f_image_preprocessed = False
+        self.f_image_loaded = False       ##  
+        self.f_image_preprocessed = False ## image preprocessed
         self.f_image_extracted = False    ## table extracted
         self.f_image_recognized = False   ## table digits recognized
         self.f_image_solved = False       ##
-        self.Board = None   ## board of recognized numbers
+        self.BoardRecognition = None   ## board of recognized numbers
+        self.BoardSolution = None   ## board of recognized numbers
+
+
+    def setNewImage(self, filename):
+        self.filename = filename
+        self.__init()
         print(self.filename)
 
-    def image_load(self):
+    def _image_load(self):
         img = cv.imread(self.filename, cv.IMREAD_COLOR)
         if img is not None:
             print(img.shape)
@@ -326,7 +335,7 @@ class SudokuRecognition():
         newimage[y0:y0+h, x0:x0+w] = image[:]
         return newimage
 
-    def image_preprocess(self, image, wiping = 1):
+    def _image_preprocess(self, image, wiping = 1):
         if wiping > 3 or wiping < 0:
             wiping = 3
         try:
@@ -341,16 +350,16 @@ class SudokuRecognition():
         thresh = cv.adaptiveThreshold(gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, wiping * 7)
         return thresh
 
-    def _extract_table_corners(self, image):
+    def __extract_table_corners(self, image):
         Contours = ImageContours(image)
         print(Contours.getContourNumber())
+        self.__debug_save_image("All_contours.jpg", Contours.getOutlinedNamedContourImage)
         Contours.limitContoursWithArea(0.2)
         if Contours.getContourNumber() == 0:
             return []
         for i in range(Contours.getContourNumber()):
-            print('Contour ', i, Contours.getContourArea(i) / Contours.imageArea,'center', Contours.getContourCenter(i))
-            plt.imshow(Contours.ExtractContour(i, imageFrom=self.Image_original))
-            plt.show()
+            # plt.imshow(Contours.ExtractContour(i, imageFrom=self.Image_original))
+            # plt.show()
             cnt = Contours.getContour(i)
             peri = cv.arcLength(cnt, True)
             approx = cv.approxPolyDP(cnt, 0.05 * peri, True) ## tight !!!
@@ -358,12 +367,11 @@ class SudokuRecognition():
                 print(f"Contour found: origin has {len(cnt)} points")
                 # Here we are looking for the largest 4 sided contour
                 imgc = Contours.ExtractContour(i, image)
-                plt.imshow(imgc, cmap='gray')
-                plt.show()
+                self.__debug_save_image('cont_found.jpg', imgc)
                 return approx
         return None
     
-    def _sort_contours(self, cnts, method="left-to-right"):
+    def __sort_contours(self, cnts, method="left-to-right"):
         """Taken from https://github.com/PyImageSearch/imutils/blob/master/imutils/contours.py#L7
         and """
         # initialize the reverse flag and sort index
@@ -396,10 +404,11 @@ class SudokuRecognition():
         return list([*tops, *bottoms])
 
 
-    def table_image_extract(self):
+    def _table_image_extract(self):
         img = self.Image_preprocessed
         imgInverted = cv.bitwise_not(img)   ## invert image for contour recognition
-        corners = self._extract_table_corners(imgInverted)
+        self.__debug_save_image("for_corner_extraction.jpg", imgInverted)
+        corners = self.__extract_table_corners(imgInverted)
         if corners is None:
             return False
         corners = self.__sort_rectangle_corners(corners)
@@ -412,8 +421,7 @@ class SudokuRecognition():
             ##cv.imshow('Converted', img_trans)
             print("Image_extracted_Inv")
             self.Image_extracted_Inv = img_trans
-            plt.imshow(img_trans, cmap='gray')
-            plt.show()
+            self.__debug_save_image('Image_extracted_Inv.jpg',img_trans)
             imgTable = cv.warpPerspective(self.Image_original,trans_mat,(width, height))
         except:
             return False
@@ -422,7 +430,7 @@ class SudokuRecognition():
         self.f_image_extracted = True
         return True
     
-    def extract_digits(self, imageBW, imageExctract):
+    def _extract_digits(self, imageBW, imageExctract):
         imgs = []
         try:
             deep = imageExctract.shape[2]
@@ -452,38 +460,35 @@ class SudokuRecognition():
                     dimg = digitCnt.ExtractContour(dCind[0], imageFrom=image, cropped=True)
                 dimg = self.__put_image_tocenter(dimg, 28, 28)  ## mnist-like model size
                 imgs.append(dimg)
-                ## +++
-                plt.subplot(self.Size, self.Size, r*self.Size+c+1)
-                plt.imshow(dimg, cmap='gray', vmin=0, vmax=1)
-                plt.xticks([]); plt.yticks([])
-                ## ---
-        # plt.show()
+                self.__debug_save_image('rec_'+str(r)+'_'+str(c)+'.jpg', dimg)
         return imgs
 
 
-    def image_recognize(self):
+    def _image_recognize(self):
         # img = self.Image_extracted
         board = np.zeros((self.Size, self.Size), dtype=np.uint8)
 
         ### +++ own "mnist-like" font recognition
         np.set_printoptions(precision=3, suppress=True)
         print(f"Inverted image shape is {self.Image_extracted_Inv.shape}") 
-        images = self.extract_digits(self.Image_extracted_Inv, self.Image_extracted_Inv)
+        images = self._extract_digits(self.Image_extracted_Inv, self.Image_extracted_Inv)
         request = np.vstack(images)
         request = np.array(images)
-        pred = __class__.PREDICT_MODEL.predict(request, batch_size=self.Size * self.Size)
+        pred = self.PREDICT_MODEL.predict(request, batch_size=self.Size * self.Size)
         # print(pred)
         maxpred = np.argmax(pred, axis=1)
-        self.Board = maxpred.reshape(self.Size, self.Size)
+        self.BoardRecognition = maxpred.reshape(self.Size, self.Size)
         # print(zip(* [[x if 0<x<10 else ' ' for x in l] for l in list(board)]) )
-        for l in self.Board:
+        for l in self.BoardRecognition:
             for x in l:
                 print(x, end=' ') if 0<x<10 else print('_',end=' ')
             print()
         ### ---
-        return False
+        self.Image_recognized = self.__image_draw_solution(self.BoardRecognition)
+        self.f_image_recognized = True
+        return True
 
-    def image_draw_solution(self, solutionBoard):
+    def __image_draw_solution(self, solutionBoard):
         imSud = self.Image_extracted
         H,W = np.shape(imSud)[:2]
         cell_h = H/self.Size
@@ -497,26 +502,34 @@ class SudokuRecognition():
             for c in range(0, self.Size):
                 xc = int(cell_w/2 + c*W/self.Size)     ## x center of cell
                 yc = int(cell_h/2 + r*H/self.Size)     ## y center of cell
-                n = self.Board[r][c]
-                if 0< n < 10:
-                    char = str(n)
+                if 0 < self.BoardRecognition[r][c] < 10:
+                    char = str(self.BoardRecognition[r][c])
                     fontcolor = (0, 255, 0, 10)    # fake, BGRA color
-                else:
+                elif 0 < solutionBoard[r][c] < 10:
                     char = str(solutionBoard[r][c])
                     fontcolor = (0, 0, 255, 10)    # fake, BGRA color
+                else:
+                    char = ''
+                    fontcolor = (255, 0, 0, 10)    # fake, BGRA color
                 _,_,w, h = draw.textbbox ((0,0), char, font=font)
                 draw.text( (xc-w/2, yc-h/2), char, font=font, fill=fontcolor)
 
         out = Image.alpha_composite(imSud, imSudSol)
         imSud = out.convert('RGB')
         imC = np.array(imSud)
-        imO = self.Image_original
+        imO = self.Image_original.copy()
         trans_mat = cv.getPerspectiveTransform(self.marker_coordinates,self.true_coordinates)
         (height, width) = imO.shape[:2]
         cv.warpPerspective(imC, trans_mat, dsize=(width, height), dst=imO, flags=cv.WARP_INVERSE_MAP, borderMode=cv.BORDER_TRANSPARENT)
-        self.Image_solved = imO
+        # self.Image_solved = imO
+        return imO
 
-
+    def __debug_save_image(self, fname, img):
+        try:
+            fname = './debug/' + fname
+            cv.imwrite(fname, img)
+        except:
+            logger.error(f"Failed to save debug image {fname}")
 
 
 
@@ -524,30 +537,28 @@ class SudokuRecognition():
 
 
 
-    def recognize(self):
-        if not self.image_load():
+    def MakeImageRecognition(self, callback=None):
+        if not self._image_load():
             return False
         print("Image_original")
-        plt.imshow(self.Image_original)
-        plt.show()
+        self.__debug_save_image('R_Image_original.jpg',self.Image_original)
         
-        self.Image_preprocessed = self.image_preprocess(image = self.Image_original)
+        self.Image_preprocessed = self._image_preprocess(image = self.Image_original)
         self.f_image_preprocessed = True
 
         print("Image_preprocessed")
-        plt.imshow(self.Image_preprocessed)
-        plt.show()
+        self.__debug_save_image('R_Image_preprocessed.jpg',self.Image_preprocessed)
 
-        if not self.table_image_extract():
+        if not self._table_image_extract():
             return False
         print("Image_extracted")
-        plt.imshow(self.Image_extracted)
-        plt.show()
-        if not self.image_recognize():
+        self.__debug_save_image('R_Image_extracted.jpg',self.Image_extracted)
+
+        if not self._image_recognize():
             return False
         print("Image_recognized")
-        plt.imshow(self.Image_recognized)
-        plt.show()
+        self.__debug_save_image('R_Image_recognized.jpg',self.Image_recognized)
+
         return True
 
 
@@ -555,11 +566,11 @@ if __name__=="__main__":
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
-    fname = "./test4-rotated.jpg"
+    fname = "./test-rotated-1.jpg"
     sudoku = SudokuRecognition(fname)
 
-    if sudoku.recognize():
-        print(sudoku.Board)
+    if sudoku.MakeImageRecognition():
+        print(sudoku.BoardRecognition)
 
     print(sudoku.f_image_loaded)
     print(sudoku.f_image_preprocessed)
