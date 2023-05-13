@@ -163,26 +163,26 @@ class WorkerRecognition(QtCore.QObject):
             self.SudokuRecognition = SudokuRecognition()
         self.imageFileName = imageFileName
         self.SudokuRecognition.setNewImage(self.imageFileName)
-        # try:
-        res = self.SudokuRecognition.MakeImageRecognition(callback = self.callback_process)
-        if res:
-            self.signals.signal_detected_sudoku_board.emit( (
-                    self.SudokuRecognition.BoardRecognition,
-                    self.SudokuRecognition.BoardSolution) )
-        self.signals.signal_recognition_completed.emit(True)
-        # except:
-            # self.signals.signal_recognition_completed.emit(False)
-            # logger.error("Cannot recognize image")
+        try:
+            res = self.SudokuRecognition.MakeImageRecognition(callback = self.callback_process)
+            if res:
+                self.signals.signal_detected_sudoku_board.emit( (
+                        self.SudokuRecognition.BoardRecognition,
+                        self.SudokuRecognition.BoardSolution) )
+            self.signals.signal_recognition_completed.emit(True)
+        except:
+            self.signals.signal_recognition_completed.emit(False)
+            logger.error("Cannot recognize image")
 
     def callback_process(self):
-        with self.SudokuRecognition as sr:
-            status = tuple(
-                sr.f_image_loaded,          ## image loaded
-                sr.f_image_preprocessed,    ## image preprocessed
-                sr.f_image_extracted,       ## table extracted
-                sr.f_image_recognized,      ## table digits recognized
-                sr.f_image_solved          ## sudoku solved
-                )
+        sr = self.SudokuRecognition
+        status = tuple([
+            sr.f_image_loaded,          ## image loaded
+            sr.f_image_preprocessed,    ## image preprocessed
+            sr.f_image_extracted,       ## table extracted
+            sr.f_image_recognized,      ## table digits recognized
+            sr.f_image_solved          ## sudoku solved
+            ])
         self.signals.signal_recognition_process.emit(status)
         pass
 
@@ -233,12 +233,12 @@ class AppSudoku(QtWidgets.QMainWindow):
             }
         uic.loadUi('./app.ui', self)
         ## non-resizable main window
-        #self.setFixedSize(self.size())
+        self.setFixedSize(self.size())
         self.setWindowIcon(QtGui.QIcon(self.icons["icon"]))
         self.GameSize = 9 ## sudoku size
         self.setWindowTitle("Qt sudoku recognizer and solver")
         self.display_width = 320
-        self.display_height = 240
+        self.display_height = 300
         self.OriginalImage = self.generateImage("Load image first")
         ## create the label that holds the image
         self.imageLabelOriginal.resize(self.display_width, self.display_height)
@@ -254,7 +254,6 @@ class AppSudoku(QtWidgets.QMainWindow):
         self.actionStopRecognition.triggered.connect(self.act_stop_recognition)
         self.actionStopRecognition.setEnabled(False)
         # self.actionOpenImage.setEnabled(False)
-        self.cbxSolved.setChecked(True)
 
         ## OpenImage button
         self.btnLoadImage = QActingPushButton(self.centralwidget)
@@ -355,6 +354,7 @@ class AppSudoku(QtWidgets.QMainWindow):
             self.OriginalImage = img
             self.signals.signal_change_original_pixmap.emit((True, self.OriginalImage))
             self.signals.signal_change_processed_pixmap.emit((None, None))
+            self.signals.signal_detected_sudoku_board.emit((None, None))
             self.signals.signal_open_image_file.emit(fname)
         pass
 
@@ -421,11 +421,11 @@ class AppSudoku(QtWidgets.QMainWindow):
                  VideoMode.DigitRecognition,
                  VideoMode.SudokuSolution]
         for wd, st, md in zip(checkboxes, status, modes):
-            # wd.setChecked(st)
-            wd.setCheckState(st)
+            wd.setChecked(st)
+            print(f"st={st}")
             if st:
                 mode = md
-        self.signals.signal_video_change_mode(mode)
+        self.signals.signal_video_change_mode.emit(mode)
         pass
 
 
@@ -486,7 +486,7 @@ class AppSudoku(QtWidgets.QMainWindow):
             GBrec = np.zeros((self.GameSize, self.GameSize))
         if GBsolved is None:
             GBsolved = GBrec
-        color_map = {True : "(255,0,0)",  None : None,   False : "(0,255,0)" }
+        color_map = {True : "(128,0,0)",  None : None,   False : "(0,128,0)" }
         for i in reversed(range(self.gameLayout.count())): 
             btn = self.gameLayout.itemAt(i).widget()
             useSolv = (int(GBrec[btn.row, btn.col]) == 10)

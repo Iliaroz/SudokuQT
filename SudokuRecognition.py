@@ -353,7 +353,7 @@ class SudokuRecognition():
     def __extract_table_corners(self, image):
         Contours = ImageContours(image)
         print(Contours.getContourNumber())
-        self.__debug_save_image("All_contours.jpg", Contours.getOutlinedNamedContourImage)
+        self.__debug_save_image("All_contours.jpg", Contours.getOutlinedNamedContourImage(imageFrom=self.Image_original))
         Contours.limitContoursWithArea(0.2)
         if Contours.getContourNumber() == 0:
             return []
@@ -445,10 +445,10 @@ class SudokuRecognition():
         N = self.Size * self.Size
         digitCnt = ImageContours(imageBW)
         ## find only contours with small areas
-        digitCnt.limitContoursWithArea(0.035 / N,  0.8 / N)
+        digitCnt.limitContoursWithArea(0.03 / N,  0.8 / N)
         digitCnt.limitContoursWithSize((6, 11) , (28, 28))
         print(f"digits contours: {digitCnt.getContourNumber()}")
-        
+        self.__debug_save_image("digits_contours.jpg", digitCnt.getOutlinedNamedContourImage(imageFrom=self.Image_extracted))
         for r in range(0, self.Size):
             for c in range(0, self.Size):
                 xc = int(cell_w/2 + c*W/self.Size)     ## x center of cell
@@ -460,7 +460,7 @@ class SudokuRecognition():
                     dimg = digitCnt.ExtractContour(dCind[0], imageFrom=image, cropped=True)
                 dimg = self.__put_image_tocenter(dimg, 28, 28)  ## mnist-like model size
                 imgs.append(dimg)
-                self.__debug_save_image('rec_'+str(r)+'_'+str(c)+'.jpg', dimg)
+                # self.__debug_save_image('rec_'+str(r)+'_'+str(c)+'.jpg', dimg)
         return imgs
 
 
@@ -520,7 +520,7 @@ class SudokuRecognition():
         imO = self.Image_original.copy()
         trans_mat = cv.getPerspectiveTransform(self.marker_coordinates,self.true_coordinates)
         (height, width) = imO.shape[:2]
-        cv.warpPerspective(imC, trans_mat, dsize=(width, height), dst=imO, flags=cv.WARP_INVERSE_MAP, borderMode=cv.BORDER_TRANSPARENT)
+        cv.warpPerspective(imC, trans_mat, dsize=(width, height), dst=imO, flags=cv.WARP_INVERSE_MAP|cv.INTER_LANCZOS4, borderMode=cv.BORDER_TRANSPARENT)
         # self.Image_solved = imO
         return imO
 
@@ -542,10 +542,11 @@ class SudokuRecognition():
             return False
         print("Image_original")
         self.__debug_save_image('R_Image_original.jpg',self.Image_original)
+        callback()
         
         self.Image_preprocessed = self._image_preprocess(image = self.Image_original)
         self.f_image_preprocessed = True
-
+        callback()
         print("Image_preprocessed")
         self.__debug_save_image('R_Image_preprocessed.jpg',self.Image_preprocessed)
 
@@ -553,11 +554,13 @@ class SudokuRecognition():
             return False
         print("Image_extracted")
         self.__debug_save_image('R_Image_extracted.jpg',self.Image_extracted)
+        callback()
 
         if not self._image_recognize():
             return False
         print("Image_recognized")
         self.__debug_save_image('R_Image_recognized.jpg',self.Image_recognized)
+        callback()
 
         return True
 

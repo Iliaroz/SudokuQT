@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>788</width>
-    <height>694</height>
+    <width>790</width>
+    <height>740</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -45,7 +45,7 @@
             <property name="minimumSize">
              <size>
               <width>330</width>
-              <height>250</height>
+              <height>300</height>
              </size>
             </property>
             <property name="text">
@@ -98,7 +98,7 @@
             <property name="minimumSize">
              <size>
               <width>330</width>
-              <height>250</height>
+              <height>300</height>
              </size>
             </property>
             <property name="text">
@@ -215,8 +215,11 @@
             <property name="bottomMargin">
              <number>10</number>
             </property>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="cbxLoaded">
+            <item row="4" column="0">
+             <widget class="QCheckBox" name="cbxSolved">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -227,37 +230,21 @@
                <cursorShape>PointingHandCursor</cursorShape>
               </property>
               <property name="text">
-               <string>Image loaded</string>
+               <string/>
               </property>
               <property name="checkable">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
               <property name="checked">
                <bool>false</bool>
               </property>
              </widget>
             </item>
-            <item row="4" column="0">
-             <widget class="QCheckBox" name="cbxSolved">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="text">
-               <string>Solved</string>
-              </property>
-              <property name="checkable">
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="cbxLoaded">
+              <property name="enabled">
                <bool>false</bool>
               </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="cbxPreprocessed">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -267,35 +254,25 @@
               <property name="cursor">
                <cursorShape>PointingHandCursor</cursorShape>
               </property>
-              <property name="text">
-               <string>Image preprocesssed</string>
-              </property>
-              <property name="checkable">
+              <property name="mouseTracking">
                <bool>false</bool>
               </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QCheckBox" name="cbxRecognized">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
               <property name="text">
-               <string>Recognized</string>
+               <string/>
               </property>
               <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="checked">
                <bool>false</bool>
               </property>
              </widget>
             </item>
             <item row="2" column="0">
              <widget class="QCheckBox" name="cbxTransformed">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -306,17 +283,156 @@
                <cursorShape>PointingHandCursor</cursorShape>
               </property>
               <property name="text">
-               <string>Image Transformed</string>
+               <string/>
               </property>
               <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="cbxPreprocessed">
+              <property name="enabled">
                <bool>false</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Image loaded</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QCheckBox" name="cbxRecognized">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_2">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Image filtered</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_3">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Image transformed</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_4">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Text recognized</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_5">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Sudoku solved</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <layout class="QGridLayout" name="layoutButtons" columnstretch="0">
+           <layout class="QGridLayout" name="layoutButtonsPar" columnstretch="0">
             <property name="sizeConstraint">
              <enum>QLayout::SetMinimumSize</enum>
             </property>
@@ -332,6 +448,36 @@
             <property name="bottomMargin">
              <number>10</number>
             </property>
+            <item row="0" column="0">
+             <layout class="QVBoxLayout" name="verticalLayout_5">
+              <item>
+               <widget class="QRadioButton" name="rbtnMnist">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>use own OCR implementation</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="rbtnTesseract">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>use PyTesseract library</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QGridLayout" name="layoutButtons"/>
+              </item>
+             </layout>
+            </item>
            </layout>
           </item>
          </layout>
@@ -360,7 +506,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>788</width>
+     <width>790</width>
      <height>26</height>
     </rect>
    </property>
@@ -404,82 +550,82 @@
  <resources/>
  <connections>
   <connection>
-   <sender>cbxLoaded</sender>
+   <sender>commandLinkButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>slot_show_image_loaded()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>449</x>
-     <y>503</y>
+     <x>474</x>
+     <y>495</y>
     </hint>
     <hint type="destinationlabel">
-     <x>577</x>
-     <y>476</y>
+     <x>348</x>
+     <y>485</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>cbxPreprocessed</sender>
+   <sender>commandLinkButton_2</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>slot_show_image_processed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>480</x>
-     <y>532</y>
+     <x>416</x>
+     <y>539</y>
     </hint>
     <hint type="destinationlabel">
-     <x>579</x>
-     <y>520</y>
+     <x>345</x>
+     <y>535</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>cbxTransformed</sender>
+   <sender>commandLinkButton_3</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>slot_show_image_transformed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>498</x>
-     <y>572</y>
+     <x>411</x>
+     <y>580</y>
     </hint>
     <hint type="destinationlabel">
-     <x>578</x>
-     <y>556</y>
+     <x>346</x>
+     <y>584</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>cbxRecognized</sender>
+   <sender>commandLinkButton_4</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>slot_show_image_recognized()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>458</x>
-     <y>611</y>
+     <x>420</x>
+     <y>641</y>
     </hint>
     <hint type="destinationlabel">
-     <x>577</x>
-     <y>593</y>
+     <x>348</x>
+     <y>637</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>cbxSolved</sender>
+   <sender>commandLinkButton_5</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>slot_show_image_solved()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>490</x>
-     <y>642</y>
+     <x>437</x>
+     <y>681</y>
     </hint>
     <hint type="destinationlabel">
-     <x>578</x>
-     <y>631</y>
+     <x>350</x>
+     <y>681</y>
     </hint>
    </hints>
   </connection>
