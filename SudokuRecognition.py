@@ -7,6 +7,8 @@ import cv2 as cv
 import keras
 
 from PIL import Image, ImageDraw, ImageFont
+from SudokuSolver import SudokuSolver
+
 import logging
 logger = logging.getLogger("AppSudoku")
 
@@ -478,6 +480,7 @@ class SudokuRecognition():
         # print(pred)
         maxpred = np.argmax(pred, axis=1)
         self.BoardRecognition = maxpred.reshape(self.Size, self.Size)
+        print(self.BoardRecognition)
         # print(zip(* [[x if 0<x<10 else ' ' for x in l] for l in list(board)]) )
         for l in self.BoardRecognition:
             for x in l:
@@ -487,6 +490,15 @@ class SudokuRecognition():
         self.Image_recognized = self.__image_draw_solution(self.BoardRecognition)
         self.f_image_recognized = True
         return True
+    
+    def _sudoku_solve(self, ):
+        sudokuSolver = SudokuSolver(self.BoardRecognition, 10)
+        if sudokuSolver.solve():
+            self.BoardSolution = sudokuSolver.getSolutionBoard()
+            self.Image_solved = self.__image_draw_solution(self.BoardSolution)
+            self.f_image_solved = True
+            return True
+        return False
 
     def __image_draw_solution(self, solutionBoard):
         imSud = self.Image_extracted
@@ -504,13 +516,13 @@ class SudokuRecognition():
                 yc = int(cell_h/2 + r*H/self.Size)     ## y center of cell
                 if 0 < self.BoardRecognition[r][c] < 10:
                     char = str(self.BoardRecognition[r][c])
-                    fontcolor = (0, 255, 0, 10)    # fake, BGRA color
+                    fontcolor = (0, 255, 0, 100)    # fake, BGRA color
                 elif 0 < solutionBoard[r][c] < 10:
                     char = str(solutionBoard[r][c])
-                    fontcolor = (0, 0, 255, 10)    # fake, BGRA color
+                    fontcolor = (255, 0, 0, 100)    # fake, BGRA color
                 else:
                     char = ''
-                    fontcolor = (255, 0, 0, 10)    # fake, BGRA color
+                    fontcolor = (0, 0, 0, 100)    # fake, BGRA color
                 _,_,w, h = draw.textbbox ((0,0), char, font=font)
                 draw.text( (xc-w/2, yc-h/2), char, font=font, fill=fontcolor)
 
@@ -560,6 +572,12 @@ class SudokuRecognition():
             return False
         print("Image_recognized")
         self.__debug_save_image('R_Image_recognized.jpg',self.Image_recognized)
+        callback()
+
+        if not self._sudoku_solve():
+            return False
+        print("Image_solved")
+        self.__debug_save_image('R_Image_solved.jpg',self.Image_solved)
         callback()
 
         return True

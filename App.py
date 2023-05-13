@@ -163,16 +163,17 @@ class WorkerRecognition(QtCore.QObject):
             self.SudokuRecognition = SudokuRecognition()
         self.imageFileName = imageFileName
         self.SudokuRecognition.setNewImage(self.imageFileName)
+        res = False
         try:
             res = self.SudokuRecognition.MakeImageRecognition(callback = self.callback_process)
             if res:
                 self.signals.signal_detected_sudoku_board.emit( (
                         self.SudokuRecognition.BoardRecognition,
                         self.SudokuRecognition.BoardSolution) )
-            self.signals.signal_recognition_completed.emit(True)
         except:
-            self.signals.signal_recognition_completed.emit(False)
             logger.error("Cannot recognize image")
+        finally:
+            self.signals.signal_recognition_completed.emit(res)
 
     def callback_process(self):
         sr = self.SudokuRecognition
@@ -190,6 +191,7 @@ class WorkerRecognition(QtCore.QObject):
     def slot_change_video_mode(self, mode):
         """Slot, catch signal from Gui to change video mode: what frame will be passed to GUI
         """
+        ## TODO: !!! make functions in Recognition class to get images
         logger.info("Changing video mode: mode=" + str(mode))
         self.mode = mode
         if self.SudokuRecognition is None:
@@ -279,6 +281,7 @@ class AppSudoku(QtWidgets.QMainWindow):
         self.signals.signal_change_processed_pixmap.connect(self.update_processed_image)
         self.signals.signal_detected_sudoku_board.connect(self.update_game_buttons_detection)
         self.signals.signal_recognition_process.connect(self.update_checkboxes_recognition)
+        self.signals.signal_recognition_completed.connect(self.recognition_completed)
 
         self.signals.signal_change_original_pixmap.emit((True, self.OriginalImage))
 
@@ -322,7 +325,7 @@ class AppSudoku(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         logger.info("Close event received.")
         #self.threadGame.stop()
-        #self.threadVideo.stop()
+        self.threadRecognition.stop()
         event.accept()
 
 
@@ -352,13 +355,16 @@ class AppSudoku(QtWidgets.QMainWindow):
         img = cv.imread(fname, cv.IMREAD_COLOR)
         if img is not None:
             self.OriginalImage = img
+            self.actionOpenImage.setEnabled(False)
             self.signals.signal_change_original_pixmap.emit((True, self.OriginalImage))
             self.signals.signal_change_processed_pixmap.emit((None, None))
             self.signals.signal_detected_sudoku_board.emit((None, None))
             self.signals.signal_open_image_file.emit(fname)
         pass
 
-
+    def recognition_completed(self):
+        logger.info("Recognition completed.")
+        self.actionOpenImage.setEnabled(True)
 
     def btn_game_pressed(self):
         btn = self.sender()
@@ -486,16 +492,18 @@ class AppSudoku(QtWidgets.QMainWindow):
             GBrec = np.zeros((self.GameSize, self.GameSize))
         if GBsolved is None:
             GBsolved = GBrec
-        color_map = {True : "(128,0,0)",  None : None,   False : "(0,128,0)" }
         for i in reversed(range(self.gameLayout.count())): 
             btn = self.gameLayout.itemAt(i).widget()
-            useSolv = (int(GBrec[btn.row, btn.col]) == 10)
-            color = color_map[ useSolv ]
+            num = int(GBrec[btn.row, btn.col])
+            useSolv = not bool(0 < num < 10)
             ## table selection
+            print(f"Num: {num},  Usesolved: { str(useSolv)}")
             if useSolv:
                 num = int(GBsolved[btn.row, btn.col])
+                color = "(0,0,169)"
             else:
                 num = int(GBrec[btn.row, btn.col])
+                color = "(0,169,0)"
             ## show number 1...9
             if 0<num<10:
                 text = str(num)
