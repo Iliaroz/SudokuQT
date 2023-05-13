@@ -19,7 +19,7 @@ class SudokuSolver:
         #     print("check the sudoku")
         #     pass
     
-    def sudoku(self,board):
+    def sudoku_correct(self,board):
         for row in range(9):
             for col in range(9):
                 #check single numbes

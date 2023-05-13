@@ -493,6 +493,8 @@ class SudokuRecognition():
     
     def _sudoku_solve(self, ):
         sudokuSolver = SudokuSolver(self.BoardRecognition, 10)
+        if sudokuSolver.sudoku_correct() == False:
+            return False
         if sudokuSolver.solve():
             self.BoardSolution = sudokuSolver.getSolutionBoard()
             self.Image_solved = self.__image_draw_solution(self.BoardSolution)

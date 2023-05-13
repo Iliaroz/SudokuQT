@@ -533,7 +533,6 @@
    </attribute>
    <addaction name="actionOpenImage"/>
    <addaction name="separator"/>
-   <addaction name="actionStopRecognition"/>
   </widget>
   <action name="actionOpenImage">
    <property name="text">
@@ -544,16 +543,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
-   </property>
-  </action>
-  <action name="actionStopRecognition">
-   <property name="text">
-    <string>Stop recognition</string>
-   </property>
-  </action>
-  <action name="actionAction_example">
-   <property name="text">
-    <string>Action example</string>
    </property>
   </action>
  </widget>

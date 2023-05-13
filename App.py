@@ -253,8 +253,6 @@ class AppSudoku(QtWidgets.QMainWindow):
         icon = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DialogOpenButton)
         self.actionOpenImage.setIcon(icon)
         self.actionOpenImage.triggered.connect(self.act_open_image_clicked)
-        self.actionStopRecognition.triggered.connect(self.act_stop_recognition)
-        self.actionStopRecognition.setEnabled(False)
         # self.actionOpenImage.setEnabled(False)
 
         ## OpenImage button
@@ -352,10 +350,6 @@ class AppSudoku(QtWidgets.QMainWindow):
         if fname:
             logger.debug(f'OpenImage: filename to open "{fname}".')
             self.LoadImageFromFile(fname)
-
-    def act_stop_recognition(self):
-        logger.info("StopRecognition button clicked.")
-        # self.signals.signal_game_stopped.emit()
 
     def LoadImageFromFile(self, fname):
         img = cv.imread(fname, cv.IMREAD_COLOR)
