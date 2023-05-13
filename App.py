@@ -273,6 +273,12 @@ class AppSudoku(QtWidgets.QMainWindow):
         self.btnSolveSudoku.setText(QtCore.QCoreApplication.translate("MainWindow", u"Solve!", None))
         self.btnSolveSudoku.setEnabled(False)
 
+        ## Progress bar
+        self.progressbar.setMinimum(0)
+        self.progressbar.setMaximum(0)
+        self.progressbar.setValue(0)
+        self.progressbar.setVisible(False)
+
         self.makeGameArea()
         self.signals = AppSignals
 
@@ -356,6 +362,7 @@ class AppSudoku(QtWidgets.QMainWindow):
         if img is not None:
             self.OriginalImage = img
             self.actionOpenImage.setEnabled(False)
+            self.progressbar.setVisible(True)
             self.signals.signal_change_original_pixmap.emit((True, self.OriginalImage))
             self.signals.signal_change_processed_pixmap.emit((None, None))
             self.signals.signal_detected_sudoku_board.emit((None, None))
@@ -365,6 +372,7 @@ class AppSudoku(QtWidgets.QMainWindow):
     def recognition_completed(self):
         logger.info("Recognition completed.")
         self.actionOpenImage.setEnabled(True)
+        self.progressbar.setVisible(False)
 
     def btn_game_pressed(self):
         btn = self.sender()

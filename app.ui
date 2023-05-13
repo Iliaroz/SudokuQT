@@ -215,7 +215,45 @@
             <property name="bottomMargin">
              <number>10</number>
             </property>
-            <item row="4" column="0">
+            <item row="2" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_2">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Image filtered</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_5">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Sudoku solved</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
              <widget class="QCheckBox" name="cbxSolved">
               <property name="enabled">
                <bool>false</bool>
@@ -240,7 +278,45 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
+            <item row="3" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_3">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Image transformed</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QCommandLinkButton" name="commandLinkButton_4">
+              <property name="font">
+               <font>
+                <family>Segoe UI</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Text recognized</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
              <widget class="QCheckBox" name="cbxLoaded">
               <property name="enabled">
                <bool>false</bool>
@@ -268,7 +344,7 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="3" column="0">
              <widget class="QCheckBox" name="cbxTransformed">
               <property name="enabled">
                <bool>false</bool>
@@ -290,7 +366,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QCheckBox" name="cbxPreprocessed">
               <property name="enabled">
                <bool>false</bool>
@@ -312,7 +388,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item row="1" column="1">
              <widget class="QCommandLinkButton" name="commandLinkButton">
               <property name="font">
                <font>
@@ -331,7 +407,7 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="0">
+            <item row="4" column="0">
              <widget class="QCheckBox" name="cbxRecognized">
               <property name="enabled">
                <bool>false</bool>
@@ -353,79 +429,13 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QCommandLinkButton" name="commandLinkButton_2">
-              <property name="font">
-               <font>
-                <family>Segoe UI</family>
-                <pointsize>9</pointsize>
-               </font>
+            <item row="0" column="1">
+             <widget class="QProgressBar" name="progressbar">
+              <property name="value">
+               <number>24</number>
               </property>
-              <property name="text">
-               <string>Image filtered</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QCommandLinkButton" name="commandLinkButton_3">
-              <property name="font">
-               <font>
-                <family>Segoe UI</family>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Image transformed</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QCommandLinkButton" name="commandLinkButton_4">
-              <property name="font">
-               <font>
-                <family>Segoe UI</family>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Text recognized</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QCommandLinkButton" name="commandLinkButton_5">
-              <property name="font">
-               <font>
-                <family>Segoe UI</family>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Sudoku solved</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
+              <property name="textVisible">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
